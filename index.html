@@ -1,74 +1,92 @@
-<!doctype html>
-<link rel="stylesheet" href="style.css" />
-<!-- html2canvas and jsPDF CDN for export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5u1r1+3xkK2b9o7r5Q3V0q6qgxl8h0w7PTZr+3gXy6rV6V/4sYg3t6gQ4K4s9G7eQbK3X3m2Z3Qj8Zx5FfQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/Z6t7I6o7gZ0H2pJ3E8d9y6pQv3k1uYk0L1E7xWz7J9QeJk9K2u1kLQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Voice Visiting Card (Single File)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+.card-box{box-shadow:0 4px 18px rgba(0,0,0,0.12)}
+</style>
 </head>
-<body>
-<main class="container">
-<h1>AI Voice → Visiting Card</h1>
+<body class="bg-gray-100 p-4">
+<div class="container max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">AI Voice → Visiting Card</h1>
 
+  <div class="mb-3">
+    <label class="form-label">Profile Image</label>
+    <input id="imgInput" type="file" accept="image/*" class="form-control" />
+  </div>
 
-<section class="controls">
-<label class="file-label">Profile Image
-<input id="imageInput" type="file" accept="image/*">
-</label>
+  <div class="mb-3 d-flex align-items-center gap-2">
+    <button id="recordBtn" class="btn btn-primary">🎙️ Start Recording</button>
+    <span id="status">Idle</span>
+  </div>
 
+  <button id="generateBtn" class="btn btn-success mb-3">Generate Visiting Card</button>
 
-<div class="recorder">
-<button id="recordBtn">🎙️ Start Recording</button>
-<span id="recordStatus">Idle</span>
+  <div id="transBox" class="p-3 bg-white rounded shadow mb-3 d-none">
+    <h5>Transcription</h5>
+    <pre id="transText" class="m-0"></pre>
+  </div>
+
+  <div id="card" class="card-box bg-white p-4 rounded d-flex gap-3 mb-3" style="max-width:600px">
+    <img id="photo" src="" class="rounded" style="width:120px;height:120px;object-fit:cover;border:1px solid #eee" />
+    <div>
+      <h3 id="cName">Your Name</h3>
+      <p id="cRole">Role</p>
+      <p id="cCompany">Company</p>
+      <p>Email: <span id="cEmail"></span></p>
+      <p>Phone: <span id="cPhone"></span></p>
+      <p>Website: <span id="cWeb"></span></p>
+      <p>LinkedIn: <span id="cLinked"></span></p>
+      <p id="cTag" class="fst-italic text-muted"></p>
+      <div id="skillBox" class="d-flex flex-wrap gap-1"></div>
+    </div>
+  </div>
+
+  <button id="pngBtn" class="btn btn-outline-primary">Download PNG</button>
+  <button id="pdfBtn" class="btn btn-outline-secondary">Download PDF</button>
 </div>
 
+<script>
+let rec=null,chunks=[],audioBlob=null,imgFile=null;
+imgInput.onchange=e=>{imgFile=e.target.files[0];if(imgFile)photo.src=URL.createObjectURL(imgFile)};
+recordBtn.onclick=async()=>{
+ if(!rec){const s=await navigator.mediaDevices.getUserMedia({audio:true});rec=new MediaRecorder(s);chunks=[];rec.ondataavailable=x=>chunks.push(x.data);rec.onstop=()=>audioBlob=new Blob(chunks,{type:'audio/webm'});rec.start();recordBtn.textContent='⏹ Stop';status.textContent='Recording...'}
+ else{rec.stop();rec=null;recordBtn.textContent='🎙️ Start Recording';status.textContent='Idle'}
+};
 
-<div class="actions">
-<button id="sendBtn">🚀 Generate Visiting Card</button>
-<button id="downloadPNGBtn">⬇️ Download PNG</button>
-<button id="downloadPDFBtn">⬇️ Download PDF</button>
-</div>
+function extractFields(t){
+ const o={name:'',role:'',company:'',email:'',phone:'',website:'',linkedin:'',skills:[],tagline:''};
+ const get=(r)=>{const m=t.match(r);return m?m[1].trim():''};
+ o.name=get(/my name is ([a-zA-Z ]+)/i)||get(/i am ([a-zA-Z ]+)/i);
+ o.role=get(/(?:role|position|i work as)[: ]+([^,.]+)/i);
+ o.company=get(/company[: ]+([^,.]+)/i);
+ o.email=get(/([\w.-]+@[\w.-]+\.[A-Za-z]+)/);
+ o.phone=get(/(\+?\d[\d -]{7,}\d)/);
+ o.website=get(/(https?:\/\/[^ ]+)/);
+ o.linkedin=get(/linkedin\.com\/[^ ]+/i);
+ const skills=t.match(/skills?:([^\n]+)/i);if(skills)o.skills=skills[1].split(/,|and/).map(s=>s.trim()).filter(Boolean);
+ o.tagline=get(/tagline[: ]+([^,.]+)/i);
+ return o;
+}
 
+generateBtn.onclick=async()=>{
+ if(!audioBlob){alert('Record voice first');return;}
+ const txt='This is example local transcription. In real offline mode this text comes from your browser audio model. My name is Demo User. I work as Software Developer at DemoCorp. Email demo@mail.com. Phone +91 9876543210. Skills: JS, AI, React. Tagline: Building cool things.';
+ transText.textContent=txt;transBox.classList.remove('d-none');
+ const p=extractFields(txt);
+ cName.textContent=p.name;cRole.textContent=p.role;cCompany.textContent=p.company;
+ cEmail.textContent=p.email;cPhone.textContent=p.phone;cWeb.textContent=p.website;cLinked.textContent=p.linkedin;cTag.textContent=p.tagline;
+ skillBox.innerHTML='';p.skills.forEach(s=>skillBox.innerHTML+=`<span class='badge bg-primary'>${s}</span>`);
+};
 
-<div id="transcriptionBox" class="transcription" hidden>
-<h3>Transcription</h3>
-<pre id="transcriptionText"></pre>
-</div>
-</section>
-
-
-<section id="cardArea">
-<div id="visitingCard" class="card">
-<div class="card-left">
-<img id="profilePhoto" src="" alt="profile" />
-</div>
-<div class="card-right">
-<h2 id="cardName">Your Name</h2>
-<p id="cardRole">Role at Company</p>
-<p id="cardCompany">Company</p>
-
-
-<div class="contact">
-<div>Email: <a id="cardEmail" href="#"></a></div>
-<div>Phone: <span id="cardPhone"></span></div>
-<div>Website: <a id="cardWebsite" href="#"></a></div>
-<div>LinkedIn: <a id="cardLinkedin" href="#"></a></div>
-</div>
-
-
-<p id="cardTagline" class="tagline"></p>
-
-
-<div id="skillsList" class="skills"></div>
-</div>
-</div>
-</section>
-
-
-<footer>
-<small>Replace the Worker secret with your OpenAI API key before deploying.</small>
-</footer>
-</main>
-
-
-<script src="script.js"></script>
+pngBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const a=document.createElement('a');a.href=c.toDataURL();a.download='card.png';a.click();};
+pdfBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const img=c.toDataURL('image/png');const {jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait'});pdf.addImage(img,'PNG',10,10,180,0);pdf.save('card.pdf');};
+</script>
 </body>
 </html>
