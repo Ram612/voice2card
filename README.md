@@ -8,7 +8,7 @@ This is a small web app that records voice (via Web Speech API), extracts contac
 2. Push to the `main` branch and enable **GitHub Pages** (Settings → Pages → Main branch).
 3. Open the site URL served by GitHub Pages.
 4. Allow microphone access and click **Start Transcription**. Speak clearly:  
-   _Example:_ “Hi, I’m Ram Kumar, Technical Architect at Alpha Solutions. Email ram@alpha.com, phone +91 98765 43210. I specialise in AI, Odoo and React.”
+   _Example:_ “Hi, I’m Ram Kumar, Technical Architect at Alpha Solutions. Email ram@alpha.com, phone +91 900000000. I specialise in AI, Odoo and React.”
 5. Stop recording and click **Extract Profile & Generate Card**. The visiting card preview will populate.
 6. Click **Download PNG** or **Download PDF** to save the card.
 
