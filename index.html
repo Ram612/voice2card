@@ -4,23 +4,34 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AI Voice Visiting Card (Single File)</title>
+
+<!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Export Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-.card-box{box-shadow:0 4px 18px rgba(0,0,0,0.12)}
+  .card-box{box-shadow:0 4px 18px rgba(0,0,0,0.12)}
+  .template-switcher select{border:1px solid #ddd}
 </style>
 </head>
+
 <body class="bg-gray-100 p-4">
 <div class="container max-w-3xl mx-auto">
+
   <h1 class="text-2xl font-bold mb-4">AI Voice → Visiting Card</h1>
 
+  <!-- Image Upload -->
   <div class="mb-3">
     <label class="form-label">Profile Image</label>
     <input id="imgInput" type="file" accept="image/*" class="form-control" />
   </div>
 
+  <!-- Recording -->
   <div class="mb-3 d-flex align-items-center gap-2">
     <button id="recordBtn" class="btn btn-primary">🎙️ Start Recording</button>
     <span id="status">Idle</span>
@@ -28,124 +39,202 @@
 
   <button id="generateBtn" class="btn btn-success mb-3">Generate Visiting Card</button>
 
+  <!-- Transcription Box -->
   <div id="transBox" class="p-3 bg-white rounded shadow mb-3 d-none">
     <h5>Transcription</h5>
     <pre id="transText" class="m-0"></pre>
   </div>
 
+  <!-- Visiting Card -->
   <div id="card" class="card-box bg-white p-4 rounded d-flex gap-3 mb-3" style="max-width:600px">
     <img id="photo" src="" class="rounded" style="width:120px;height:120px;object-fit:cover;border:1px solid #eee" />
     <div>
       <h3 id="cName">Your Name</h3>
       <p id="cRole">Role</p>
       <p id="cCompany">Company</p>
+
       <p>Email: <span id="cEmail"></span></p>
       <p>Phone: <span id="cPhone"></span></p>
       <p>Website: <span id="cWeb"></span></p>
       <p>LinkedIn: <span id="cLinked"></span></p>
+
       <p id="cTag" class="fst-italic text-muted"></p>
+
       <div id="skillBox" class="d-flex flex-wrap gap-1"></div>
     </div>
   </div>
 
+  <!-- Download Buttons -->
   <button id="pngBtn" class="btn btn-outline-primary">Download PNG</button>
   <button id="pdfBtn" class="btn btn-outline-secondary">Download PDF</button>
+
 </div>
 
 <script>
 let rec=null,chunks=[],audioBlob=null,imgFile=null;
-imgInput.onchange=e=>{imgFile=e.target.files[0];if(imgFile)photo.src=URL.createObjectURL(imgFile)};
-recordBtn.onclick=async()=>{
- if(!rec){const s=await navigator.mediaDevices.getUserMedia({audio:true});rec=new MediaRecorder(s);chunks=[];rec.ondataavailable=x=>chunks.push(x.data);rec.onstop=()=>audioBlob=new Blob(chunks,{type:'audio/webm'});rec.start();recordBtn.textContent='⏹ Stop';status.textContent='Recording...'}
- else{rec.stop();rec=null;recordBtn.textContent='🎙️ Start Recording';status.textContent='Idle'}
+
+// Photo Upload
+imgInput.onchange=e=>{
+  imgFile=e.target.files[0];
+  if(imgFile) photo.src=URL.createObjectURL(imgFile);
 };
 
+// Recording
+recordBtn.onclick=async()=>{
+ if(!rec){
+   const s=await navigator.mediaDevices.getUserMedia({audio:true});
+   rec=new MediaRecorder(s);
+   chunks=[];
+   rec.ondataavailable=x=>chunks.push(x.data);
+   rec.onstop=()=>audioBlob=new Blob(chunks,{type:'audio/webm'});
+   rec.start();
+   recordBtn.textContent='⏹ Stop';
+   status.textContent='Recording...';
+ } else {
+   rec.stop();
+   rec=null;
+   recordBtn.textContent='🎙️ Start Recording';
+   status.textContent='Idle';
+ }
+};
+
+// Field extraction
 function extractFields(t){
  const o={name:'',role:'',company:'',email:'',phone:'',website:'',linkedin:'',skills:[],tagline:''};
  const get=(r)=>{const m=t.match(r);return m?m[1].trim():''};
- o.name=get(/my name is ([a-zA-Z ]+)/i)||get(/i am ([a-zA-Z ]+)/i);
+
+ o.name=get(/my name is ([a-zA-Z ]+)/i) || get(/i am ([a-zA-Z ]+)/i);
  o.role=get(/(?:role|position|i work as)[: ]+([^,.]+)/i);
  o.company=get(/company[: ]+([^,.]+)/i);
  o.email=get(/([\w.-]+@[\w.-]+\.[A-Za-z]+)/);
  o.phone=get(/(\+?\d[\d -]{7,}\d)/);
  o.website=get(/(https?:\/\/[^ ]+)/);
  o.linkedin=get(/linkedin\.com\/[^ ]+/i);
- const skills=t.match(/skills?:([^\n]+)/i);if(skills)o.skills=skills[1].split(/,|and/).map(s=>s.trim()).filter(Boolean);
+
+ const skills=t.match(/skills?:([^\n]+)/i);
+ if(skills) o.skills=skills[1].split(/,|and/).map(s=>s.trim()).filter(Boolean);
+
  o.tagline=get(/tagline[: ]+([^,.]+)/i);
  return o;
 }
 
+// Generate Visiting Card
 generateBtn.onclick=async()=>{
  if(!audioBlob){alert('Record voice first');return;}
- const txt='This is example local transcription. In real offline mode this text comes from your browser audio model. My name is Demo User. I work as Software Developer at DemoCorp. Email demo@mail.com. Phone +91 9876543210. Skills: JS, AI, React. Tagline: Building cool things.';
- transText.textContent=txt;transBox.classList.remove('d-none');
+
+ const txt=`This is example local transcription. My name is Demo User. 
+ I work as Software Developer at DemoCorp. 
+ Email demo@mail.com. Phone +91 9876543210. 
+ Skills: JS, AI, React. Tagline: Building cool things.`;
+
+ transText.textContent=txt;
+ transBox.classList.remove('d-none');
+
  const p=extractFields(txt);
- cName.textContent=p.name;cRole.textContent=p.role;cCompany.textContent=p.company;
- cEmail.textContent=p.email;cPhone.textContent=p.phone;cWeb.textContent=p.website;cLinked.textContent=p.linkedin;cTag.textContent=p.tagline;
- skillBox.innerHTML='';p.skills.forEach(s=>skillBox.innerHTML+=`<span class='badge bg-primary'>${s}</span>`);
+
+ cName.textContent=p.name;
+ cRole.textContent=p.role;
+ cCompany.textContent=p.company;
+ cEmail.textContent=p.email;
+ cPhone.textContent=p.phone;
+ cWeb.textContent=p.website;
+ cLinked.textContent=p.linkedin;
+ cTag.textContent=p.tagline;
+
+ skillBox.innerHTML='';
+ p.skills.forEach(s=>skillBox.innerHTML+=`<span class='badge bg-primary'>${s}</span>`);
 };
 
-pngBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const a=document.createElement('a');a.href=c.toDataURL();a.download='card.png';a.click();};
-pdfBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const img=c.toDataURL('image/png');const {jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait'});pdf.addImage(img,'PNG',10,10,180,0);pdf.save('card.pdf');};
+// Download PNG
+pngBtn.onclick=async()=>{
+ const c=await html2canvas(card,{scale:2});
+ const a=document.createElement('a');
+ a.href=c.toDataURL();
+ a.download='card.png';
+ a.click();
+};
+
+// Download PDF
+pdfBtn.onclick=async()=>{
+ const c=await html2canvas(card,{scale:2});
+ const img=c.toDataURL('image/png');
+ const {jsPDF}=window.jspdf;
+ const pdf=new jsPDF({orientation:'portrait'});
+ pdf.addImage(img,'PNG',10,10,180,0);
+ pdf.save('card.pdf');
+};
 </script>
-  
-  <!-- Template Switcher -->
-  <div class="template-switcher" style="position:fixed;bottom:20px;right:20px;background:#fff;padding:12px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.1);z-index:999;">
-    <h4 style="margin:0 0 6px 0;font-size:14px;">Card Template</h4>
-    <select id="templateSelect" style="padding:6px 8px;border-radius:6px;width:160px;">
-      <option value="square">Square</option>
-      <option value="rectangle">Rectangle</option>
-      <option value="circle">Circle Photo</option>
-      <option value="modernGradient">Modern Gradient</option>
-      <option value="curved">Curved Shape</option>
-    </select>
-  </div>
 
-  <script>
-    const card = document.getElementById('visitingCard');
-    const profilePhoto = document.getElementById('profilePhoto');
+<!-- TEMPLATE SWITCHER UI -->
+<div class="template-switcher"
+     style="position:fixed;bottom:20px;right:20px;background:#fff;padding:12px;border-radius:12px;
+     box-shadow:0 4px 14px rgba(0,0,0,0.1);z-index:999;">
+  <h4 style="margin:0 0 6px 0;font-size:14px;">Card Template</h4>
+  <select id="templateSelect" style="padding:6px 8px;border-radius:6px;width:160px;">
+    <option value="square">Square</option>
+    <option value="rectangle">Rectangle</option>
+    <option value="circle">Circle Photo</option>
+    <option value="modernGradient">Modern Gradient</option>
+    <option value="curved">Curved Shape</option>
+  </select>
+</div>
 
-    document.getElementById('templateSelect').addEventListener('change', (e) => {
-      const t = e.target.value;
-      card.className = 'card';
-
-      switch(t){
-        case 'square':
-          card.style.borderRadius = '12px';
-          profilePhoto.style.borderRadius = '8px';
-          card.style.background = '#ffffff';
-          break;
-        case 'rectangle':
-          card.style.width = '820px';
-          card.style.borderRadius = '6px';
-          profilePhoto.style.borderRadius = '6px';
-          card.style.background = '#ffffff';
-          break;
-        case 'circle':
-          profilePhoto.style.borderRadius = '50%';
-          card.style.background = '#ffffff';
-          break;
-        case 'modernGradient':
-          card.style.background = 'linear-gradient(135deg, #6366f1, #0ea5e9)';
-          card.style.color = '#fff';
-          profilePhoto.style.borderRadius = '12px';
-          break;
-        case 'curved':
-          card.style.background = '#fff';
-          card.style.position = 'relative';
-          card.innerHTML += `<div class="curve" style="position:absolute;top:0;left:0;width:100%;height:80px;background:linear-gradient(135deg,#06b6d4,#3b82f6);border-radius:0 0 50% 50%;z-index:-1;"></div>`;
-          break;
-      }
-    });
-  </script>
-
-
-<!-- New Templates & Features Added -->
-<div id="extra-templates"></div>
-
+<!-- FIXED TEMPLATE SWITCHER LOGIC -->
 <script>
-// Placeholder for new templates (Minimal, Neon, Glass, Formal, Creative)
-// Will append dynamically or can be embedded fully later.
+const cardEl = document.getElementById('card');
+const profilePhoto = document.getElementById('photo');
+
+document.getElementById('templateSelect').addEventListener('change', (e) => {
+  const t = e.target.value;
+
+  // reset
+  cardEl.removeAttribute("style");
+  profilePhoto.removeAttribute("style");
+  cardEl.className = "card-box bg-white p-4 rounded d-flex gap-3 mb-3";
+
+  const oldCurve = document.getElementById("curveLayer");
+  if (oldCurve) oldCurve.remove();
+
+  switch(t){
+    case 'square':
+      cardEl.style.borderRadius="12px";
+      profilePhoto.style.borderRadius="8px";
+      break;
+
+    case 'rectangle':
+      cardEl.style.width="820px";
+      cardEl.style.borderRadius="6px";
+      profilePhoto.style.borderRadius="6px";
+      break;
+
+    case 'circle':
+      profilePhoto.style.borderRadius="50%";
+      break;
+
+    case 'modernGradient':
+      cardEl.style.background="linear-gradient(135deg, #6366f1, #0ea5e9)";
+      cardEl.style.color="#fff";
+      profilePhoto.style.borderRadius="12px";
+      break;
+
+    case 'curved':
+      cardEl.style.position="relative";
+
+      const curve=document.createElement("div");
+      curve.id="curveLayer";
+      curve.style.position="absolute";
+      curve.style.top="0";
+      curve.style.left="0";
+      curve.style.width="100%";
+      curve.style.height="90px";
+      curve.style.background="linear-gradient(135deg,#06b6d4,#3b82f6)";
+      curve.style.borderRadius="0 0 50% 50%";
+      curve.style.zIndex="-1";
+      cardEl.appendChild(curve);
+      break;
+  }
+});
 </script>
+
 </body>
 </html>
