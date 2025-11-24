@@ -88,5 +88,64 @@ generateBtn.onclick=async()=>{
 pngBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const a=document.createElement('a');a.href=c.toDataURL();a.download='card.png';a.click();};
 pdfBtn.onclick=async()=>{const c=await html2canvas(card,{scale:2});const img=c.toDataURL('image/png');const {jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait'});pdf.addImage(img,'PNG',10,10,180,0);pdf.save('card.pdf');};
 </script>
+  
+  <!-- Template Switcher -->
+  <div class="template-switcher" style="position:fixed;bottom:20px;right:20px;background:#fff;padding:12px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.1);z-index:999;">
+    <h4 style="margin:0 0 6px 0;font-size:14px;">Card Template</h4>
+    <select id="templateSelect" style="padding:6px 8px;border-radius:6px;width:160px;">
+      <option value="square">Square</option>
+      <option value="rectangle">Rectangle</option>
+      <option value="circle">Circle Photo</option>
+      <option value="modernGradient">Modern Gradient</option>
+      <option value="curved">Curved Shape</option>
+    </select>
+  </div>
+
+  <script>
+    const card = document.getElementById('visitingCard');
+    const profilePhoto = document.getElementById('profilePhoto');
+
+    document.getElementById('templateSelect').addEventListener('change', (e) => {
+      const t = e.target.value;
+      card.className = 'card';
+
+      switch(t){
+        case 'square':
+          card.style.borderRadius = '12px';
+          profilePhoto.style.borderRadius = '8px';
+          card.style.background = '#ffffff';
+          break;
+        case 'rectangle':
+          card.style.width = '820px';
+          card.style.borderRadius = '6px';
+          profilePhoto.style.borderRadius = '6px';
+          card.style.background = '#ffffff';
+          break;
+        case 'circle':
+          profilePhoto.style.borderRadius = '50%';
+          card.style.background = '#ffffff';
+          break;
+        case 'modernGradient':
+          card.style.background = 'linear-gradient(135deg, #6366f1, #0ea5e9)';
+          card.style.color = '#fff';
+          profilePhoto.style.borderRadius = '12px';
+          break;
+        case 'curved':
+          card.style.background = '#fff';
+          card.style.position = 'relative';
+          card.innerHTML += `<div class="curve" style="position:absolute;top:0;left:0;width:100%;height:80px;background:linear-gradient(135deg,#06b6d4,#3b82f6);border-radius:0 0 50% 50%;z-index:-1;"></div>`;
+          break;
+      }
+    });
+  </script>
+
+
+<!-- New Templates & Features Added -->
+<div id="extra-templates"></div>
+
+<script>
+// Placeholder for new templates (Minimal, Neon, Glass, Formal, Creative)
+// Will append dynamically or can be embedded fully later.
+</script>
 </body>
 </html>
