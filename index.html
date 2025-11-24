@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AI Voice Visiting Card</title>
+<link rel="stylesheet" href="style.css" />
+<!-- html2canvas and jsPDF CDN for export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5u1r1+3xkK2b9o7r5Q3V0q6qgxl8h0w7PTZr+3gXy6rV6V/4sYg3t6gQ4K4s9G7eQbK3X3m2Z3Qj8Zx5FfQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/Z6t7I6o7gZ0H2pJ3E8d9y6pQv3k1uYk0L1E7xWz7J9QeJk9K2u1kLQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<main class="container">
+<h1>AI Voice → Visiting Card</h1>
+
+
+<section class="controls">
+<label class="file-label">Profile Image
+<input id="imageInput" type="file" accept="image/*">
+</label>
+
+
+<div class="recorder">
+<button id="recordBtn">🎙️ Start Recording</button>
+<span id="recordStatus">Idle</span>
+</div>
+
+
+<div class="actions">
+<button id="sendBtn">🚀 Generate Visiting Card</button>
+<button id="downloadPNGBtn">⬇️ Download PNG</button>
+<button id="downloadPDFBtn">⬇️ Download PDF</button>
+</div>
+
+
+<div id="transcriptionBox" class="transcription" hidden>
+<h3>Transcription</h3>
+<pre id="transcriptionText"></pre>
+</div>
+</section>
+
+
+<section id="cardArea">
+<div id="visitingCard" class="card">
+<div class="card-left">
+<img id="profilePhoto" src="" alt="profile" />
+</div>
+<div class="card-right">
+<h2 id="cardName">Your Name</h2>
+<p id="cardRole">Role at Company</p>
+<p id="cardCompany">Company</p>
+
+
+<div class="contact">
+<div>Email: <a id="cardEmail" href="#"></a></div>
+<div>Phone: <span id="cardPhone"></span></div>
+<div>Website: <a id="cardWebsite" href="#"></a></div>
+<div>LinkedIn: <a id="cardLinkedin" href="#"></a></div>
+</div>
+
+
+<p id="cardTagline" class="tagline"></p>
+
+
+<div id="skillsList" class="skills"></div>
+</div>
+</div>
+</section>
+
+
+<footer>
+<small>Replace the Worker secret with your OpenAI API key before deploying.</small>
+</footer>
+</main>
+
+
+<script src="script.js"></script>
+</body>
+</html>
